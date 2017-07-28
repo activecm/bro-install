@@ -83,5 +83,5 @@ echo "Please edit /usr/local/bro/etc/node.cfg. The worker config must set lb_met
 Additionally, you must specify how many capture processes to run with lb_procs.
 See https://www.bro.org/sphinx/configuration/index.html"
 
-echo "Additionally edit monitor-only.sh to use your monitoring interface.
+echo "To tune your interface for monitoring edit monitor-only.sh to use your monitoring interface.
 After editing the file, copy it to /etc/network/if-up.d/, and bring the monitoring interface down and back up."
