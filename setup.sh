@@ -6,7 +6,7 @@ MAKE_FLAGS="-j$(nproc --all)"
 #BRO deps
 apt-get -y install cmake make gcc g++ flex bison libpcap-dev libssl-dev python-dev swig zlib1g-dev
 #BRO optional deps
-apt-get -y install libgeoip-dev curl git libgoogle-perftools-dev 
+apt-get -y install libgeoip-dev curl git libgoogle-perftools-dev sendmail 
 #PF RING deps
 apt-get -y install build-essential linux-headers-$(uname -r) libnuma-dev
 
