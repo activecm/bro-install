@@ -3,6 +3,7 @@
 set -e
 
 MAKE_FLAGS="-j$(nproc --all)"
+apt-get update
 #BRO deps
 apt-get -y install cmake make gcc g++ flex bison libpcap-dev libssl-dev python-dev swig zlib1g-dev
 #BRO optional deps
@@ -56,9 +57,6 @@ cd ../libpcap
 make $MAKE_FLAGS
 make install
 
-#Make PF Ring's libpcap available to the compiler
-echo "/usr/local/pfring/lib" >> /etc/ld.so.conf
-
 #Install PF Ring's tcpdump
 cd ../tcpdump
 ./configure --prefix=/usr/local/pfring
@@ -69,10 +67,10 @@ make install
 echo 'PATH=$PATH:/usr/local/pfring/bin:/usr/local/pfring/sbin' >> /etc/bash.bashrc
 
 #Get BRO
-cd ../../
+cd ../../../
 git clone -b 'v2.5.1' --recursive https://github.com/bro/bro.git
 cd bro
-./configure --prefix=/usr/local/bro --with-pcap=/usr/local/pfring/lib
+./configure --prefix=/usr/local/bro --with-pcap=/usr/local/pfring
 make $MAKE_FLAGS
 make install
 
