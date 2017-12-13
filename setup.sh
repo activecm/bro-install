@@ -7,7 +7,7 @@ apt-get update
 #BRO deps
 apt-get -y install cmake make gcc g++ flex bison libpcap-dev libssl-dev python-dev swig zlib1g-dev
 #BRO optional deps
-apt-get -y install libgeoip-dev curl git libgoogle-perftools-dev sendmail 
+apt-get -y install libgeoip-dev curl git libgoogle-perftools-dev sendmail python-pip
 #PF RING deps
 apt-get -y install build-essential linux-headers-$(uname -r) libnuma-dev
 
@@ -77,9 +77,32 @@ make install
 #Add Bro's executables to the PATH
 echo 'PATH=$PATH:/usr/local/bro/bin' >> /etc/bash.bashrc
 
+#Install Bro plugin manager
+pip install bro-pkg
+
+#Install and configure interface-setup plugin
+bro-pkg install --force bro-interface-setup
+cat << EOF >> /usr/local/bro/etc/broctl.cfg
+###############################################
+# Interface Setup Plugin Options
+
+#interfacesetup.enabled=1
+# To change the default mtu that is configured
+interfacesetup.mtu=1500
+
+# To change the default commands that are used to bring up the interface
+#interfacesetup.up_command=/sbin/ifconfig {interface} up mtu {mtu}
+#interfacesetup.flags_command=/sbin/ethtool -K {interface} gro off lro off rx off tx off gso off
+
+# For FreeBSD systems uncomment this line
+#interfacesetup.flags_command=/sbin/ifconfig {interface} -rxcsum -txcsum -tso4 -tso6 -lro -rxcsum6 -txcsum6 -vlanhwcsum -vlanhwtso
+EOF
+
+echo.
 echo "Please edit /usr/local/bro/etc/node.cfg. The worker config must set lb_method=pf_ring.
 Additionally, you must specify how many capture processes to run with lb_procs.
 See https://www.bro.org/sphinx/configuration/index.html"
 
-echo "To tune your interface for monitoring edit monitor-only.sh to use your monitoring interface.
-After editing the file, copy it to /etc/network/if-up.d/, and bring the monitoring interface down and back up."
+echo.
+echo "To tune your interfaces for monitoring edit /usr/local/bro/etc/broctl.cfg and uncomment 'interfacesetup.enabled=1'."
+

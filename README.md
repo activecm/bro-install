@@ -3,10 +3,10 @@ An Installation Script for Bro IDS on Debian Based Systems
 
 This script creates a clustered installation of Bro-IDS on Debian based systems.
 
-After running `setup.sh`, edit the files in `/usr/local/bro/etc` appropriately.
+Please note that this type of installation is intended where performance is key. The typical setup assumes that you have one or more interfaces dedicated to capturing traffic (i.e. receive only). These interfaces will be completely taken over for capturing traffic and won't be able to be used for any other purposes.
 
-Additionally, you may wish to use `monitor-only.sh` to ensure your monitor interfaces
-are properly tuned after each boot.
+1. Run `sudo ./setup.sh`
+2. Edit `node.cfg` and `broctl.cfg` in `/usr/local/bro/etc` appropriately
 
 ## Resources:
 - https://www.bro.org/sphinx-git/quickstart/index.html
