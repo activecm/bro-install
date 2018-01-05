@@ -17,6 +17,7 @@
 #type=logger
 #host=localhost
 #
+
 [manager]
 type=manager
 host=127.0.0.1

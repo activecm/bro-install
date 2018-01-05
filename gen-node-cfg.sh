@@ -91,7 +91,7 @@ require_file /bin/awk /bin/cp /bin/date /bin/egrep /bin/sed /bin/tr /proc/cpuinf
 #require_file /usr/local/bro/etc/ || exit 1
 #echo Continuing, all requirements met
 
-this_script_path=`type -path gen-node-cfg.sh | sed -e 's@gen-node-cfg.sh$@@'`
+this_script_path="$(dirname "$BASH_SOURCE[0]")"
 
 while [ -n "$1" ]; do
 	if [ "z$1" = "z--dry-run" ]; then
