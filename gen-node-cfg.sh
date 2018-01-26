@@ -155,7 +155,7 @@ for one_if in $avail_if_list ; do
 		approved_ifs="$approved_ifs $one_if"
 	fi
 done
-approved_if_count=`echo approved_ifs | wc -w`
+approved_if_count=`echo $approved_ifs | wc -w`
 echo ; echo
 
 node_configuration_block=''
