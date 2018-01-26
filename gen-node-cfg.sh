@@ -3,6 +3,7 @@
 
 
 #This and node.cfg-template should be in the same directory.
+#This will create a new node.cfg, but will ask the user to confirm replacement before doing so.
 #To test with different numbers of interfaces:
 #	sudo modprobe dummy numdummies=30
 #To remove these:
@@ -23,6 +24,19 @@ require_file () {
 	done
 	return 0							#True, all objects are here
 }
+
+
+require_util () {
+	#Returns true if all binaries listed as parameters exist somewhere in the path, False if one or more missing.
+        while [ -n "$1" ]; do
+                if ! type -path "$1" >/dev/null 2>/dev/null ; then
+                        echo Missing utility "$1". Please install it. >&2
+                        return 1        #False, app is not available.
+                fi
+                shift
+        done
+        return 0        #True, app is there.
+} #End of requireutil
 
 
 subtract_lists () {
@@ -53,6 +67,7 @@ available_interfaces () {
 	echo "$non_default_ifs" | tr '\n' ' '
 }
 
+
 if_stats_for () {
 	#Returns the send/receive stats for the sole interface supplied as a parameter.
 	if [ -n "$1" ]; then
@@ -62,10 +77,11 @@ if_stats_for () {
 	fi
 }
 
+
 askYN () {
 	TESTYN=""
 	while [ "$TESTYN" != 'Y' ] && [ "$TESTYN" != 'N' ] ; do
-		echo -n '? ' >&2
+		echo -n '?' >&2
 		read TESTYN || :
 		case $TESTYN in
 		T*|t*|Y*|y*)		TESTYN='Y'	;;
@@ -81,32 +97,40 @@ askYN () {
 } #End of askYN
 
 
+fail () {
+	echo "$*, exiting." >&2
+	exit 1
+}
+
+
 #======== Main ========
 
 PATH="/bin:/sbin:/usr/bin:/usr/sbin:$PATH"
 export PATH
 
-require_file /bin/awk /bin/cp /bin/date /bin/egrep /bin/sed /bin/tr /proc/cpuinfo /sbin/ip || exit 1
-#FIXME - restoreme
-#require_file /usr/local/bro/etc/ || exit 1
-#echo Continuing, all requirements met
+require_file /proc/cpuinfo				|| fail "Missing /proc/cpuinfo ; is this a Linux system? "
+require_util awk cp date egrep grep mv sed tr ip wc	|| fail "A needed tool is missing"
+require_file /usr/local/bro/etc/			|| fail "Missing bro configuration dir /usr/local/bro/etc/ "
+echo Continuing, all requirements met
 
-this_script_path="$(dirname "$BASH_SOURCE[0]")"
+this_script_path=$(dirname "${BASH_SOURCE[0]}")
 
-while [ -n "$1" ]; do
-	if [ "z$1" = "z--dry-run" ]; then
-		DryRun='True'
-	fi
-	shift
-done
+require_file "$this_script_path/node.cfg-template"	|| fail "There is no node.cfg-template in the current directory"
+
+#Not needed at the moment as we ask the user whether to replace node.cfg before doing so.
+#while [ -n "$1" ]; do
+#	if [ "z$1" = "z--dry-run" ]; then
+#		DryRun='True'
+#	fi
+#	shift
+#done
 
 if [ -d /usr/local/bro/etc/ ]; then
 	bro_node_cfg='/usr/local/bro/etc/node.cfg'
 elif [ -d /opt/bro/etc/ ]; then
 	bro_node_cfg='/opt/bro/etc/node.cfg'
 else
-	echo "Unable to find bro configuration file node.cfg in either /usr/local/bro/etc/ or /opt/bro/etc/ ; exiting." >&2
-	exit 1
+	fail "Unable to find bro configuration file node.cfg in either /usr/local/bro/etc/ or /opt/bro/etc/ "
 fi
 
 Now=`/bin/date +%Y%m%d%H%M%S`
@@ -115,9 +139,7 @@ avail_if_list=`available_interfaces`
 avail_cores=`available_cores`
 echo "This system has $avail_cores cores."
 if [ `echo "$avail_if_list" | wc -w` -eq 0 ]; then
-	echo "There are no potentially sniffable interfaces."
-	echo "This script will not be able to generate a node.cfg file as at least one interface is required.  Exiting."
-	exit 1
+	fail "There are no potentially sniffable interfaces.  This script will not be able to generate a node.cfg file as at least one interface is required"
 elif [ `echo "$avail_if_list" | wc -w` -eq 1 ]; then
 	echo "The potentially sniffable interface is: $avail_if_list"
 else
