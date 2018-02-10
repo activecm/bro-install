@@ -1,5 +1,6 @@
 #!/bin/bash
 #Copyright 2017 William Stearns and Offensive Countermeasures
+#v0.4
 
 
 #This and node.cfg-template should be in the same directory.
@@ -61,7 +62,7 @@ available_cores () {
 
 available_interfaces () {
 	#Returns a list of all non-loopback interfaces, one per line
-	raw_if_list=`ip -o link | awk '{print $2}' | sed -e 's/:$//' | egrep -v '(^lo$)'`
+	raw_if_list=`ip -o link | grep 'state UP' | awk '{print $2}' | sed -e 's/:$//' | egrep -v '(^lo$)'`
 	default_ifs=`/sbin/ip route | grep '^default ' | sed -e 's/^.* dev //' -e 's/  *$//'`
 	non_default_ifs=`subtract_lists "$raw_if_list" "$default_ifs"`
 	echo "$non_default_ifs" | tr '\n' ' '
@@ -82,7 +83,7 @@ askYN () {
 	TESTYN=""
 	while [ "$TESTYN" != 'Y' ] && [ "$TESTYN" != 'N' ] ; do
 		echo -n '?' >&2
-		read TESTYN || :
+		read TESTYN <&2 || :
 		case $TESTYN in
 		T*|t*|Y*|y*)		TESTYN='Y'	;;
 		F*|f*|N*|n*)		TESTYN='N'	;;
@@ -110,7 +111,9 @@ export PATH
 
 require_file /proc/cpuinfo				|| fail "Missing /proc/cpuinfo ; is this a Linux system? "
 require_util awk cp date egrep grep mv sed tr ip wc	|| fail "A needed tool is missing"
-require_file /usr/local/bro/etc/			|| fail "Missing bro configuration dir /usr/local/bro/etc/ "
+if [ ! -d /usr/local/bro/etc/ -a ! -d /opt/bro/etc/ ]; then
+	fail "Missing bro configuration dir /opt/bro/etc/ or /usr/local/bro/etc "
+fi
 echo Continuing, all requirements met
 
 this_script_path=$(dirname "${BASH_SOURCE[0]}")
