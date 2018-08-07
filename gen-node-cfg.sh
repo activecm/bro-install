@@ -153,7 +153,7 @@ approved_ifs=''
 for one_if in $avail_if_list ; do
 	echo 'Here are the stats for '"$one_if"
 	if_stats_for "$one_if"
-	echo -n 'Would you like to include it as a sniff interface'
+	echo -n 'Would you like to include it as a sniff interface (y/n)'
 	if askYN ; then
 		approved_ifs="$approved_ifs $one_if"
 	fi
