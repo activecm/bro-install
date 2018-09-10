@@ -1,6 +1,6 @@
 #!/bin/bash
-#Copyright 2017 William Stearns and Offensive Countermeasures
-#v0.4
+#Copyright 2017 William Stearns and Active Countermeasures
+#v0.5
 
 
 #This and node.cfg-template should be in the same directory.
@@ -153,7 +153,7 @@ approved_ifs=''
 for one_if in $avail_if_list ; do
 	echo 'Here are the stats for '"$one_if"
 	if_stats_for "$one_if"
-	echo -n 'Would you like to include it as a sniff interface'
+	echo -n 'Would you like to include it as a sniff interface (y/n)'
 	if askYN ; then
 		approved_ifs="$approved_ifs $one_if"
 	fi
@@ -163,7 +163,12 @@ echo ; echo
 
 node_configuration_block=''
 node_count=0
-cores_per_if=$[ ( $avail_cores - 2 ) / $approved_if_count ]
+if [ $approved_if_count -eq 0 ]; then
+	echo "This configuration has no sniff interfaces, so bro will not be able to run.  Exiting bro configuration script."
+	exit 1
+else
+	cores_per_if=$[ ( $avail_cores - 2 ) / $approved_if_count ]
+fi
 if [ $cores_per_if -lt 1 ]; then
 	echo "Warning: there are more interfaces than available cores.  Setting CoresPerInterface to 1." >&2
 	cores_per_if=1
