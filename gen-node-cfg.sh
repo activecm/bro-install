@@ -1,12 +1,13 @@
 #!/bin/bash
 #Copyright 2017 William Stearns and Active Countermeasures
-#v0.5
+#v0.5.1
 
 
 #This and node.cfg-template should be in the same directory.
 #This will create a new node.cfg, but will ask the user to confirm replacement before doing so.
 #To test with different numbers of interfaces:
 #	sudo modprobe dummy numdummies=30
+#	for oneif in `ifconfig -a | grep '^dummy' | awk '{print $1}'` ; do sudo /sbin/ifconfig "$oneif" up ; done
 #To remove these:
 #	sudo rmmod dummy
 #Once removed, one can rerun modprobe with a different number of dummies.
@@ -62,7 +63,7 @@ available_cores () {
 
 available_interfaces () {
 	#Returns a list of all non-loopback interfaces, one per line
-	raw_if_list=`ip -o link | grep 'state UP' | awk '{print $2}' | sed -e 's/:$//' | egrep -v '(^lo$)'`
+	raw_if_list=`ip -o link | egrep '(state UP|state UNKNOWN|state DORMANT)' | awk '{print $2}' | sed -e 's/:$//' | egrep -v '(^lo$)'`
 	default_ifs=`/sbin/ip route | grep '^default ' | sed -e 's/^.* dev //' -e 's/  *$//'`
 	non_default_ifs=`subtract_lists "$raw_if_list" "$default_ifs"`
 	echo "$non_default_ifs" | tr '\n' ' '
