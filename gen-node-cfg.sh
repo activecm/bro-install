@@ -7,6 +7,7 @@
 #This will create a new node.cfg, but will ask the user to confirm replacement before doing so.
 #To test with different numbers of interfaces:
 #	sudo modprobe dummy numdummies=30
+#	for oneif in `ifconfig -a | grep '^dummy' | awk '{print $1}'` ; do sudo /sbin/ifconfig "$oneif" up ; done
 #To remove these:
 #	sudo rmmod dummy
 #Once removed, one can rerun modprobe with a different number of dummies.
