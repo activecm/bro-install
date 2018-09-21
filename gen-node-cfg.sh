@@ -1,6 +1,6 @@
 #!/bin/bash
-#Copyright 2017 William Stearns and Active Countermeasures
-#v0.5.1
+#Copyright 2017-2018 William Stearns and Active Countermeasures
+#v0.5.2
 
 
 #This and node.cfg-template should be in the same directory.
@@ -109,6 +109,27 @@ fail () {
 
 PATH="/bin:/sbin:/usr/bin:/usr/sbin:$PATH"
 export PATH
+
+
+echo 'If you need to check or change your network interfaces, please do so now'
+echo 'by switching to a different terminal and making any changes.  Please note'
+echo 'that any interfaces you would like to use for packet capture must be up'
+echo 'and configured before you continue.  When the interfaces are ready,'
+echo 'please return to this terminal.'
+echo
+echo 'Would you like to continue running the Bro configuration script? '
+echo 'You might answer no if you know you have already created a working'
+echo 'node.cfg and do not wish to replace it.  Otherwise we recommend'
+echo 'continuing with this script.'
+echo -n '(y/n)'
+if askYN ; then
+	:
+else
+	echo "Will not continue creating node.cfg.  Exiting."
+	exit 1
+fi
+
+
 
 require_file /proc/cpuinfo				|| fail "Missing /proc/cpuinfo ; is this a Linux system? "
 require_util awk cp date egrep grep mv sed tr ip wc	|| fail "A needed tool is missing"
