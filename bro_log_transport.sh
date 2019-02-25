@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Version 0.3.1
+#Version 0.3.4
 
 #This sends any bro logs less than three days old to the rita/aihunter server.  It only sends logs of these types:
 #conn., dns., http., ssl., x509., and known_certs.  Any logs that already exist on the target system are not retransferred.
@@ -13,6 +13,7 @@
 #sudo chown -R dataimport /opt/bro/remotelogs/ /home/dataimport/.ssh/
 #sudo chmod go-rwx -R /home/dataimport/.ssh/
 
+export PATH="/sbin:/usr/sbin:$PATH"		#Note that cron does _NOT_ include /sbin in the path, so attempts to locate the "ip" binary fail without this fix
 
 default_user_on_aihunter='dataimport'
 
@@ -92,7 +93,7 @@ require_util () {
 
 
 #Check that we have basic tools to continue
-require_util awk date egrep find grep hostname ip nice rsync sed ssh sort tr		|| fail "Missing a required utility"
+require_util awk cut date egrep find grep hostname ip nice rsync sed ssh sort tr		|| fail "Missing a required utility"
 
 #ionice is not stricly required; if it exists we'll use it to give all other processes on the system first access to the disk, effectively eliminating the chance that we cause dropped packets from disk contention.
 if type -path ionice >/dev/null 2>/dev/null ; then
@@ -145,25 +146,33 @@ if [ -z "$aih_location" ]; then
 fi
 
 #Find a unique name for this bro node
+#Note that the ID cannot contain:   “/, \, ., “, *, <, >, :, |, ?, $,“. It also cannot contain a single space or null character.  Avoiding comma too just in case.
+#It must also be <=53 characters, as mongo has a maximum database name size of 64 chars and we need to leave space for -YYYY-MM-DD
 if [ -s /etc/rita/agent.yaml -a -n "`grep '^[^#]*Name' /etc/rita/agent.yaml | sed -e 's/^.*Name:*\W*//'`" ]; then
 	#Manually setting the hostname to use in agent.yaml is preferred...
-	my_id=`grep '^[^#]*Name' /etc/rita/agent.yaml | sed -e 's/^.*Name:*\W*//'`
+	my_id=`grep '^[^#]*Name' /etc/rita/agent.yaml | sed -e 's/^.*Name:*\W*//' | tr -dc 'a-zA-Z0-9_^+=' | cut -c -52`
 else
 	#...but if no name is forced, we use the short hostname + the primary IP, which should be unique.
 	#Following is short form of the hostname, then "__", then the primary IP ipv4 address (one for the default route) of the system.
 	#The tr command strips off spaces or odd characters in hostname
-	my_id=`hostname -s | tr -dc 'a-zA-Z0-9_.:-'`"__"`ip route get 8.8.8.8 | awk '{print $NF;exit}'`
+	my_id=`hostname -s | tr -dc 'a-zA-Z0-9_^+='`"__"`ip route get 8.8.8.8 | awk '{print $NF;exit}' | tr -dc 'a-zA-Z0-9_^+='`
+	my_id=`echo "$my_id" | cut -c -52`
 fi
 
 if [ -z "$remote_top_dir" ]; then
 	remote_top_dir="/opt/bro/remotelogs/$my_id/"
 fi
 
+extra_ssh_params=' '
+if [ -s ~/.ssh/id_rsa_dataimport.pub ]; then
+	extra_ssh_params=' -i ~/.ssh/id_rsa_dataimport.pub '
+fi
+
 #Make sure we can ssh to the aihunter system first
-if ! can_ssh "$aih_location" "-o" 'PasswordAuthentication=no' ; then
+if ! can_ssh "$aih_location" "-o" 'PasswordAuthentication=no' $extra_ssh_params ; then
 	if [ -s ~/.ssh/id_rsa -a -s ~/.ssh/id_rsa.pub ]; then
 		status "Transferring the RSA key to $aih_location - please provide the password when prompted"
-		cat ~/.ssh/{id_dsa.pub,id_ecdsa.pub,id_rsa.pub} 2>/dev/null \
+		cat ~/.ssh/{id_dsa.pub,id_ecdsa.pub,id_rsa.pub,id_rsa_dataimport.pub} 2>/dev/null \
 		 | ssh "$aih_location" 'mkdir -p .ssh ; cat >>.ssh/authorized_keys ; chmod go-rwx ./ .ssh/ .ssh/authorized_keys'
 	elif [ -s ~/.ssh/id_rsa -o -s ~/.ssh/id_rsa.pub ]; then
 		fail "Unable to ssh to $aih_location, and one of the keys exist.  Please transfer the public key to $aih_location, make sure you can ssh from here, and rerun this script"
@@ -178,7 +187,7 @@ if ! can_ssh "$aih_location" "-o" 'PasswordAuthentication=no' ; then
 		 | ssh "$aih_location" 'mkdir -p .ssh ; cat >>.ssh/authorized_keys ; chmod go-rwx ./ .ssh/ .ssh/authorized_keys'
 	fi
 
-	if ! can_ssh "$aih_location" "-o" 'PasswordAuthentication=no' ; then
+	if ! can_ssh "$aih_location" "-o" 'PasswordAuthentication=no' $extra_ssh_params ; then
 		fail "Unable to ssh to $aih_location using something other than a password"
 	fi
 fi
@@ -215,7 +224,7 @@ ssh "$aih_location" "mkdir -p ${remote_top_dir}/$today/ ${remote_top_dir}/$yeste
 send_candidates=`find "$local_tld" -type f -mtime -3 -iname '*.gz' | egrep '(conn\.|dns\.|http\.|ssl\.|x509\.|known_certs\.)' | sed -e 's@^.*/logs/@@' -e 's@^.*/_data/@@' | sort -u`
 cd "$local_tld" || fail "Unable to change to $local_tld"
 status "Transferring files to $aih_location"
-$nice_me rsync $rsyncparams -avR -e ssh $send_candidates "$aih_location:${remote_top_dir}/" --delay-updates
+$nice_me rsync $rsyncparams -avR -e "ssh $extra_ssh_params" $send_candidates "$aih_location:${remote_top_dir}/" --delay-updates
 
 #Note: after we added a user option to set the destination dir, we remove the --temp-dir option as this dir may not be on the same mount point as the destination dir.
 #rsync will put temporary files in a .~tmp~ directory under each destination subdir.
