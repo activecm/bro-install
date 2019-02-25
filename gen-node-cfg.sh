@@ -189,7 +189,7 @@ if [ $approved_if_count -eq 0 ]; then
 	echo "This configuration has no sniff interfaces, so bro will not be able to run.  Exiting bro configuration script."
 	exit 1
 else
-	cores_per_if=$[ ( $avail_cores - 2 ) / $approved_if_count ]
+	cores_per_if=$[ ( $avail_cores - 4 ) / $approved_if_count ]
 fi
 if [ $cores_per_if -lt 1 ]; then
 	echo "Warning: there are more interfaces than available cores.  Setting CoresPerInterface to 1." >&2
