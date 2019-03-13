@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Version 0.3.4
+#Version 0.3.5
 
 #This sends any bro logs less than three days old to the rita/aihunter server.  It only sends logs of these types:
 #conn., dns., http., ssl., x509., and known_certs.  Any logs that already exist on the target system are not retransferred.
@@ -164,8 +164,8 @@ if [ -z "$remote_top_dir" ]; then
 fi
 
 extra_ssh_params=' '
-if [ -s ~/.ssh/id_rsa_dataimport.pub ]; then
-	extra_ssh_params=' -i ~/.ssh/id_rsa_dataimport.pub '
+if [ -s ~/.ssh/id_rsa_dataimport ]; then
+	extra_ssh_params=' -i ~/.ssh/id_rsa_dataimport '
 fi
 
 #Make sure we can ssh to the aihunter system first
@@ -218,7 +218,7 @@ threeda=`date '+%Y-%m-%d' --date='3 days ago'`
 status "Sending logs to rita/aihunter server $aih_location , My name: $my_id , local dir: $local_tld , remote dir: $remote_top_dir"
 
 status "Preparing remote directories"
-ssh "$aih_location" "mkdir -p ${remote_top_dir}/$today/ ${remote_top_dir}/$yesterday/ ${remote_top_dir}/$twoda/ ${remote_top_dir}/$threeda/ ${remote_top_dir}/current/"
+ssh $extra_ssh_params "$aih_location" "mkdir -p ${remote_top_dir}/$today/ ${remote_top_dir}/$yesterday/ ${remote_top_dir}/$twoda/ ${remote_top_dir}/$threeda/ ${remote_top_dir}/current/"
 
 
 send_candidates=`find "$local_tld" -type f -mtime -3 -iname '*.gz' | egrep '(conn\.|dns\.|http\.|ssl\.|x509\.|known_certs\.)' | sed -e 's@^.*/logs/@@' -e 's@^.*/_data/@@' | sort -u`
