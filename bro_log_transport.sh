@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Version 0.3.5
+#Version 0.3.6
 
 #This sends any bro logs less than three days old to the rita/aihunter server.  It only sends logs of these types:
 #conn., dns., http., ssl., x509., and known_certs.  Any logs that already exist on the target system are not retransferred.
@@ -164,26 +164,26 @@ if [ -z "$remote_top_dir" ]; then
 fi
 
 extra_ssh_params=' '
-if [ -s ~/.ssh/id_rsa_dataimport ]; then
-	extra_ssh_params=' -i ~/.ssh/id_rsa_dataimport '
+if [ -s "$HOME/.ssh/id_rsa_dataimport" ]; then
+	extra_ssh_params=" -i $HOME/.ssh/id_rsa_dataimport "
 fi
 
 #Make sure we can ssh to the aihunter system first
 if ! can_ssh "$aih_location" "-o" 'PasswordAuthentication=no' $extra_ssh_params ; then
-	if [ -s ~/.ssh/id_rsa -a -s ~/.ssh/id_rsa.pub ]; then
+	if [ -s "$HOME/.ssh/id_rsa" -a -s "$HOME/.ssh/id_rsa.pub" ]; then
 		status "Transferring the RSA key to $aih_location - please provide the password when prompted"
-		cat ~/.ssh/{id_dsa.pub,id_ecdsa.pub,id_rsa.pub,id_rsa_dataimport.pub} 2>/dev/null \
+		cat "$HOME/.ssh/{id_dsa.pub,id_ecdsa.pub,id_rsa.pub,id_rsa_dataimport.pub}" 2>/dev/null \
 		 | ssh "$aih_location" 'mkdir -p .ssh ; cat >>.ssh/authorized_keys ; chmod go-rwx ./ .ssh/ .ssh/authorized_keys'
-	elif [ -s ~/.ssh/id_rsa -o -s ~/.ssh/id_rsa.pub ]; then
+	elif [ -s "$HOME/.ssh/id_rsa" -o -s "$HOME/.ssh/id_rsa.pub" ]; then
 		fail "Unable to ssh to $aih_location, and one of the keys exist.  Please transfer the public key to $aih_location, make sure you can ssh from here, and rerun this script"
 	elif [ ! type -path ssh-keygen >/dev/null 2>/dev/null ]; then
 		fail "Unable to ssh to $aih_location, and we do not have a key generator.  Please create a keypair, transfer the public key to $aih_location, make sure you can ssh from here, and rerun this script"
 	else
 		#Create ssh key if it doesn't exist, and push to aihunter server or ask user to do so.
 		status "Creating a new RSA key with no passphrase"
-		ssh-keygen -b 2048 -t rsa -N '' -f ~/.ssh/id_rsa
+		ssh-keygen -b 2048 -t rsa -N '' -f "$HOME/.ssh/id_rsa"
 		status "Transferring the RSA key to $aih_location - please provide the password when prompted"
-		cat ~/.ssh/{id_dsa.pub,id_ecdsa.pub,id_rsa.pub} 2>/dev/null \
+		cat "$HOME/.ssh/{id_dsa.pub,id_ecdsa.pub,id_rsa.pub}" 2>/dev/null \
 		 | ssh "$aih_location" 'mkdir -p .ssh ; cat >>.ssh/authorized_keys ; chmod go-rwx ./ .ssh/ .ssh/authorized_keys'
 	fi
 
