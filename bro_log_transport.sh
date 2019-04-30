@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Version 0.3.6
+#Version 0.3.7
 
 #This sends any bro logs less than three days old to the rita/aihunter server.  It only sends logs of these types:
 #conn., dns., http., ssl., x509., and known_certs.  Any logs that already exist on the target system are not retransferred.
@@ -221,7 +221,7 @@ status "Preparing remote directories"
 ssh $extra_ssh_params "$aih_location" "mkdir -p ${remote_top_dir}/$today/ ${remote_top_dir}/$yesterday/ ${remote_top_dir}/$twoda/ ${remote_top_dir}/$threeda/ ${remote_top_dir}/current/"
 
 
-send_candidates=`find "$local_tld" -type f -mtime -3 -iname '*.gz' | egrep '(conn\.|dns\.|http\.|ssl\.|x509\.|known_certs\.)' | sed -e 's@^.*/logs/@@' -e 's@^.*/_data/@@' | sort -u`
+send_candidates=`find "$local_tld" -type f -mtime -3 -iname '*.gz' | egrep '(conn|dns|http|ssl|x509|known_certs)' | sed -e 's@^.*/logs/@@' -e 's@^.*/_data/@@' | sort -u`
 cd "$local_tld" || fail "Unable to change to $local_tld"
 status "Transferring files to $aih_location"
 $nice_me rsync $rsyncparams -avR -e "ssh $extra_ssh_params" $send_candidates "$aih_location:${remote_top_dir}/" --delay-updates
