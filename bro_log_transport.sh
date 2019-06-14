@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#Version 0.3.7
+#Version 0.3.9
 
 #This sends any bro logs less than three days old to the rita/aihunter server.  It only sends logs of these types:
 #conn., dns., http., ssl., x509., and known_certs.  Any logs that already exist on the target system are not retransferred.
@@ -139,7 +139,7 @@ fi
 #Where should we send the bro logs?
 if [ -z "$aih_location" ]; then
 	if [ -s /etc/rita/agent.yaml ]; then
-		aih_location="${default_user_on_aihunter}@`grep '^[^#]*DatabaseLocation' /etc/rita/agent.yaml | sed -e 's/^.*DatabaseLocation:*\W*//'`"
+		aih_location="${default_user_on_aihunter}@`grep '^[^#]*DatabaseLocation' /etc/rita/agent.yaml 2>/dev/null | sed -e 's/^.*DatabaseLocation:*\W*//'`"
 	else
 		fail "Destination not set on the command line and no /etc/rita/agent.yaml file to autodetect destination."
 	fi
@@ -148,9 +148,9 @@ fi
 #Find a unique name for this bro node
 #Note that the ID cannot contain:   “/, \, ., “, *, <, >, :, |, ?, $,“. It also cannot contain a single space or null character.  Avoiding comma too just in case.
 #It must also be <=53 characters, as mongo has a maximum database name size of 64 chars and we need to leave space for -YYYY-MM-DD
-if [ -s /etc/rita/agent.yaml -a -n "`grep '^[^#]*Name' /etc/rita/agent.yaml | sed -e 's/^.*Name:*\W*//'`" ]; then
+if [ -s /etc/rita/agent.yaml -a -n "`grep '^[^#]*Name' /etc/rita/agent.yaml 2>/dev/null | sed -e 's/^.*Name:*\W*//'`" ]; then
 	#Manually setting the hostname to use in agent.yaml is preferred...
-	my_id=`grep '^[^#]*Name' /etc/rita/agent.yaml | sed -e 's/^.*Name:*\W*//' | tr -dc 'a-zA-Z0-9_^+=' | cut -c -52`
+	my_id=`grep '^[^#]*Name' /etc/rita/agent.yaml 2>/dev/null | sed -e 's/^.*Name:*\W*//' | tr -dc 'a-zA-Z0-9_^+=' | cut -c -52`
 else
 	#...but if no name is forced, we use the short hostname + the primary IP, which should be unique.
 	#Following is short form of the hostname, then "__", then the primary IP ipv4 address (one for the default route) of the system.
