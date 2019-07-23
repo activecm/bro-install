@@ -192,7 +192,7 @@ if ! can_ssh "$aih_location" "-o" 'PasswordAuthentication=no' $extra_ssh_params 
 	fi
 fi
 
-#What local directory holds the bro logs?  If we add any that do _not_ end in /logs/ , we need to adjust the sed command in send_candidates= below.
+#What local directory holds the bro logs?
 #Make sure the directory ends in a "/".
 if [ -z "$local_tld" ]; then
 	if [ -d /storage/bro/logs/ ]; then				#Custom
@@ -220,15 +220,14 @@ status "Sending logs to rita/aihunter server $aih_location , My name: $my_id , l
 status "Preparing remote directories"
 ssh $extra_ssh_params "$aih_location" "mkdir -p ${remote_top_dir}/$today/ ${remote_top_dir}/$yesterday/ ${remote_top_dir}/$twoda/ ${remote_top_dir}/$threeda/ ${remote_top_dir}/current/"
 
-
-send_candidates=`find "$local_tld" -type f -mtime -3 -iname '*.gz' | egrep '(conn|dns|http|ssl|x509|known_certs)' | sed -e 's@^.*/logs/@@' -e 's@^.*/_data/@@' | sort -u`
+cd "$local_tld" || fail "Unable to change to $local_tld"
+send_candidates=`find . -type f -mtime -3 -iname '*.gz' | egrep '(conn|dns|http|ssl|x509|known_certs)' | sort -u`
 if  [ ${#send_candidates} -eq 0 ]; then
 	echo
 	printf "WARNING: No logs found, if your log directory is not $local_tld please use the flag: --localdir [bro_log_directory]"
 	echo
-	
+
 fi
-cd "$local_tld" || fail "Unable to change to $local_tld"
 status "Transferring files to $aih_location"
 $nice_me rsync $rsyncparams -avR -e "ssh $extra_ssh_params" $send_candidates "$aih_location:${remote_top_dir}/" --delay-updates
 
