@@ -222,6 +222,12 @@ ssh $extra_ssh_params "$aih_location" "mkdir -p ${remote_top_dir}/$today/ ${remo
 
 
 send_candidates=`find "$local_tld" -type f -mtime -3 -iname '*.gz' | egrep '(conn|dns|http|ssl|x509|known_certs)' | sed -e 's@^.*/logs/@@' -e 's@^.*/_data/@@' | sort -u`
+if  [ ${#send_candidates} -eq 0 ]; then
+	echo
+	printf "WARNING: No logs found, if your log directory is not $local_tld please use the flag: --localdir [bro_log_directory]"
+	echo
+	
+fi
 cd "$local_tld" || fail "Unable to change to $local_tld"
 status "Transferring files to $aih_location"
 $nice_me rsync $rsyncparams -avR -e "ssh $extra_ssh_params" $send_candidates "$aih_location:${remote_top_dir}/" --delay-updates
@@ -229,4 +235,3 @@ $nice_me rsync $rsyncparams -avR -e "ssh $extra_ssh_params" $send_candidates "$a
 #Note: after we added a user option to set the destination dir, we remove the --temp-dir option as this dir may not be on the same mount point as the destination dir.
 #rsync will put temporary files in a .~tmp~ directory under each destination subdir.
 #Originally:  --temp-dir="/opt/bro/tmp/$my_id/"
-
