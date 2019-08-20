@@ -224,7 +224,7 @@ ssh $extra_ssh_params "$aih_location" "mkdir -p ${remote_top_dir}/$today/ ${remo
 send_candidates=`find "$local_tld" -type f -mtime -3 -iname '*.gz' | egrep '(conn|dns|http|ssl|x509|known_certs)' | sed -e 's@^.*/logs/@@' -e 's@^.*/_data/@@' | sort -u`
 if  [ ${#send_candidates} -eq 0 ]; then
 	echo
-	printf "WARNING: No logs found, if your log diectory is not $local_tld please use the flag: --localdir [bro_log_directory]"
+	printf "WARNING: No logs found, if your log directory is not $local_tld please use the flag: --localdir [bro_log_directory]"
 	echo
 	
 fi
