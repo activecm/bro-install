@@ -2,6 +2,9 @@
 #Copyright 2017-2018 William Stearns and Active Countermeasures
 #v0.5.2
 
+#Returns 0 if node.cfg was successfully set up.
+#Returns 1 if an unexpected error arrises.
+#Returns 2 if node.cfg was not set up (due to user choice or lack of resources)
 
 #This and node.cfg-template should be in the same directory.
 #This will create a new node.cfg, but will ask the user to confirm replacement before doing so.
@@ -104,6 +107,10 @@ fail () {
 	exit 1
 }
 
+exit_no_node_cfg () {
+	echo "$*, exiting." >&2
+	exit 2
+}
 
 #======== Main ========
 
@@ -125,8 +132,7 @@ echo -n '(y/n)'
 if askYN ; then
 	:
 else
-	echo "Will not continue creating node.cfg.  Exiting."
-	exit 1
+	exit_no_node_cfg "Will not continue creating node.cfg"
 fi
 
 
@@ -164,7 +170,7 @@ avail_if_list=`available_interfaces`
 avail_cores=`available_cores`
 echo "This system has $avail_cores cores."
 if [ `echo "$avail_if_list" | wc -w` -eq 0 ]; then
-	fail "There are no potentially sniffable interfaces.  This script will not be able to generate a node.cfg file as at least one interface is required"
+	exit_no_node_cfg "There are no potentially sniffable interfaces.  This script will not be able to generate a node.cfg file as at least one interface is required"
 elif [ `echo "$avail_if_list" | wc -w` -eq 1 ]; then
 	echo "The potentially sniffable interface is: $avail_if_list"
 else
@@ -186,8 +192,7 @@ echo ; echo
 node_configuration_block=''
 node_count=0
 if [ $approved_if_count -eq 0 ]; then
-	echo "This configuration has no sniff interfaces, so bro will not be able to run.  Exiting bro configuration script."
-	exit 1
+	exit_no_node_cfg "This configuration has no sniff interfaces, so bro will not be able to run"
 else
 	cores_per_if=$[ ( $avail_cores - 4 ) / $approved_if_count ]
 fi
