@@ -10,10 +10,10 @@ Please note that this type of installation is intended where performance is key.
 3. Edit `broctl.cfg` in `/usr/local/bro/etc` to further tune your interfaces for performance. Uncomment the line `#interfacesetup.enabled=1` to enable.
 
 ## Resources:
-- https://www.bro.org/sphinx-git/quickstart/index.html
-- https://www.bro.org/sphinx/install/install.html
-- https://www.bro.org/sphinx/frameworks/geoip.html#geolocation
-- https://www.bro.org/sphinx/configuration/index.html
+- https://docs.zeek.org/en/master/quickstart/index.html
+- https://docs.zeek.org/en/master/install/index.html
+- https://docs.zeek.org/en/master/frameworks/geoip.html
+- https://docs.zeek.org/en/master/configuration/index.html
 
 ## Verified Systems
 This script has been tested on:
