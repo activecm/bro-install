@@ -40,6 +40,12 @@ require_util () {
         return 0        #True, app is there.
 } #End of requireutil
 
+check_zeek_path () {
+	if [ -d /usr/local/zeek/etc/ -o -d /opt/zeek/etc/ ]; then
+		return 0
+	fi
+	return 1
+}
 
 subtract_lists () {
 	#Returns all lines in the first list ("$1", one line per entry, surround by double quotes when passing in) that aren't in the second (same notes).
@@ -110,6 +116,12 @@ fail () {
 PATH="/bin:/sbin:/usr/bin:/usr/sbin:$PATH"
 export PATH
 
+ids_name=""
+if check_zeek_path; then
+	ids_name="zeek"
+else
+	ids_name="bro"
+fi
 
 echo 'If you need to check or change your network interfaces, please do so now'
 echo 'by switching to a different terminal and making any changes.  Please note'
@@ -117,7 +129,7 @@ echo 'that any interfaces you would like to use for packet capture must be up'
 echo 'and configured before you continue.  When the interfaces are ready,'
 echo 'please return to this terminal.'
 echo
-echo 'Would you like to continue running the Bro configuration script? '
+echo 'Would you like to continue running the '$ids_name' configuration script? '
 echo 'You might answer no if you know you have already created a working'
 echo 'node.cfg and do not wish to replace it.  Otherwise we recommend'
 echo 'continuing with this script.'
@@ -133,8 +145,10 @@ fi
 
 require_file /proc/cpuinfo				|| fail "Missing /proc/cpuinfo ; is this a Linux system? "
 require_util awk cp date egrep grep mv sed tr ip wc	|| fail "A needed tool is missing"
-if [ ! -d /usr/local/bro/etc/ -a ! -d /opt/bro/etc/ ]; then
-	fail "Missing bro configuration dir /opt/bro/etc/ or /usr/local/bro/etc "
+
+
+if [ ! -d /usr/local/$ids_name/etc/ -a ! -d /opt/$ids_name/etc/ ]; then
+	fail "Missing $ids_name configuration dir /opt/$ids_name/etc/ or /usr/local/$ids_name/etc "
 fi
 echo Continuing, all requirements met
 
@@ -150,12 +164,12 @@ require_file "$this_script_path/node.cfg-template"	|| fail "There is no node.cfg
 #	shift
 #done
 
-if [ -d /usr/local/bro/etc/ ]; then
-	bro_node_cfg='/usr/local/bro/etc/node.cfg'
-elif [ -d /opt/bro/etc/ ]; then
-	bro_node_cfg='/opt/bro/etc/node.cfg'
+if [ -d /usr/local/$ids_name/etc/ ]; then
+	node_cfg='/usr/local/'$ids_name'/etc/node.cfg'
+elif [ -d /opt/$ids_name/etc/ ]; then
+	node_cfg='/opt/'$ids_name'/etc/node.cfg'
 else
-	fail "Unable to find bro configuration file node.cfg in either /usr/local/bro/etc/ or /opt/bro/etc/ "
+	fail "Unable to find $ids_name configuration file node.cfg in either /usr/local/$ids_name/etc/ or /opt/$ids_name/etc/ "
 fi
 
 Now=`/bin/date +%Y%m%d%H%M%S`
@@ -186,7 +200,7 @@ echo ; echo
 node_configuration_block=''
 node_count=0
 if [ $approved_if_count -eq 0 ]; then
-	echo "This configuration has no sniff interfaces, so bro will not be able to run.  Exiting bro configuration script."
+	echo "This configuration has no sniff interfaces, so $ids_name will not be able to run.  Exiting $ids_name configuration script."
 	exit 1
 else
 	cores_per_if=$[ ( $avail_cores - 4 ) / $approved_if_count ]
@@ -201,23 +215,21 @@ for one_if in $approved_ifs ; do
 
 done
 
-if [ -e "$bro_node_cfg" ]; then
-	cp -p "$bro_node_cfg" "$bro_node_cfg.$Now"
-	echo "A backup has been made for the existing $bro_node_cfg ."
+if [ -e "$node_cfg" ]; then
+	cp -p "$node_cfg" "$node_cfg.$Now"
+	echo "A backup has been made for the existing $node_cfg ."
 else
-	echo "$bro_node_cfg does not exist, creating one from scratch."
+	echo "$node_cfg does not exist, creating one from scratch."
 fi
 
 
-cat "$this_script_path/node.cfg-template" | sed -e 's/@@InterfaceConfig@@/'"$node_configuration_block"'/' >"${bro_node_cfg}.tmp"
+cat "$this_script_path/node.cfg-template" | sed -e 's/@@InterfaceConfig@@/'"$node_configuration_block"'/' >"${node_cfg}.tmp"
 echo "Here is the proposed new node.cfg:"
-cat "$bro_node_cfg.tmp"
+cat "$node_cfg.tmp"
 echo
 echo -n "Would you like to replace the existing node.cfg with the above file"
 if askYN ; then
-	mv "${bro_node_cfg}.tmp" "$bro_node_cfg"
+	mv "${node_cfg}.tmp" "$node_cfg"
 else
 	echo "No change has been made to node.cfg."
 fi
-
-
