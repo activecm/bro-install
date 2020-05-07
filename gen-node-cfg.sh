@@ -129,7 +129,7 @@ echo 'that any interfaces you would like to use for packet capture must be up'
 echo 'and configured before you continue.  When the interfaces are ready,'
 echo 'please return to this terminal.'
 echo
-echo 'Would you like to continue running the '$ids_name' configuration script? '
+echo "Would you like to continue running the $ids_name configuration script? "
 echo 'You might answer no if you know you have already created a working'
 echo 'node.cfg and do not wish to replace it.  Otherwise we recommend'
 echo 'continuing with this script.'
@@ -165,9 +165,9 @@ require_file "$this_script_path/node.cfg-template"	|| fail "There is no node.cfg
 #done
 
 if [ -d /usr/local/$ids_name/etc/ ]; then
-	node_cfg='/usr/local/'$ids_name'/etc/node.cfg'
+	node_cfg="/usr/local/$ids_name/etc/node.cfg"
 elif [ -d /opt/$ids_name/etc/ ]; then
-	node_cfg='/opt/'$ids_name'/etc/node.cfg'
+	node_cfg="/opt/$ids_name/etc/node.cfg"
 else
 	fail "Unable to find $ids_name configuration file node.cfg in either /usr/local/$ids_name/etc/ or /opt/$ids_name/etc/ "
 fi
