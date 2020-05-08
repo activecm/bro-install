@@ -89,7 +89,7 @@ if_stats_for () {
 askYN () {
 	TESTYN=""
 	while [ "$TESTYN" != 'Y' ] && [ "$TESTYN" != 'N' ] ; do
-		echo -n '?' >&2
+		echo -n '? ' >&2
 		read TESTYN <&2 || :
 		case $TESTYN in
 		T*|t*|Y*|y*)		TESTYN='Y'	;;
@@ -123,29 +123,24 @@ else
 	ids_name="bro"
 fi
 
-echo 'If you need to check or change your network interfaces, please do so now'
-echo 'by switching to a different terminal and making any changes.  Please note'
-echo 'that any interfaces you would like to use for packet capture must be up'
-echo 'and configured before you continue.  When the interfaces are ready,'
-echo 'please return to this terminal.'
+
+echo -e "\e[96mNote\e[0m: It is now time to select capture interface(s). Keep the following in mind when making selections:"
+echo -e "      \e[1m1. The interfaces you most likely want to use for capturing start with \"eth\" or \"en\" (e.g. eth0, eno1, enp1s0, enx78e7d1ea46da)\e[0m."
+echo -e "      \e[1m   You will generally NOT want to use loopback, bridged, or virtual interfaces (e.g. lo, br-c446eb08dde, veth582437d)\e[0m."
+echo -e "      \e[1m   If you choose to select interfaces belonging to the latter category, proceed at your own risk\e[0m."
 echo
-echo "Would you like to continue running the $ids_name configuration script? "
-echo 'You might answer no if you know you have already created a working'
-echo 'node.cfg and do not wish to replace it.  Otherwise we recommend'
-echo 'continuing with this script.'
-echo -n '(y/n)'
-if askYN ; then
-	:
-else
+echo -e "      \e[1m2. Ensure that your capture interfaces are up before continuing\e[0m."
+echo
+echo -n "Would you like to continue running the $ids_name configuration script and generate a new node.cfg file? (y/n) "
+
+if ! askYN ; then
 	echo "Will not continue creating node.cfg.  Exiting."
 	exit 1
 fi
 
 
-
 require_file /proc/cpuinfo				|| fail "Missing /proc/cpuinfo ; is this a Linux system? "
 require_util awk cp date egrep grep mv sed tr ip wc	|| fail "A needed tool is missing"
-
 
 if [ ! -d /usr/local/$ids_name/etc/ -a ! -d /opt/$ids_name/etc/ ]; then
 	fail "Missing $ids_name configuration dir /opt/$ids_name/etc/ or /usr/local/$ids_name/etc "
