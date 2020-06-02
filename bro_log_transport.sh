@@ -2,10 +2,10 @@
 
 #Version 0.3.9
 
-#This sends any bro logs less than three days old to the rita/aihunter server.  It only sends logs of these types:
+#This sends any bro/zeek logs less than three days old to the rita/aihunter server.  It only sends logs of these types:
 #conn., dns., http., ssl., x509., and known_certs.  Any logs that already exist on the target system are not retransferred.
 
-#Before using this, run these on the rita/aihunter server:
+#Before using this, run these on the rita/aihunter server (use zeek in place of bro if necesssary):
 #sudo adduser dataimport
 #sudo passwd dataimport
 #sudo mkdir -p /opt/bro/remotelogs/ /home/dataimport/.ssh/
@@ -67,7 +67,7 @@ usage () {
 	echo 'By default we will look in common locations for this directory tree.' >&2
 	echo '' >&2
 	echo 'The optional --remotedir is where you want the Bro/Zeek logs to end up on the target system.' >&2
-	echo 'If left off, it will be /opt/bro/remotelogs/$my_id/' >&2
+	echo 'If left off, it will be /opt/bro/remotelogs/$my_id/ or /opt/zeek/remotelogs/$my_id/' >&2
 	echo '' >&2
 	echo 'The optional --rsyncparams allows you to specify parameters for rsync.  MAKE SURE to enclose the entire block in a pair of single quotes.  Suggestions:' >&2
 	echo '	--bwlimit=NNN	#Limit bandwidth used to NNN kilobytes/sec' >&2
@@ -136,7 +136,7 @@ if [ -z "$rsyncparams" ]; then
 	rsyncparams=" -q "
 fi
 
-#Where should we send the bro logs?
+#Where should we send the bro/zeek logs?
 if [ -z "$aih_location" ]; then
 	if [ -s /etc/rita/agent.yaml ]; then
 		aih_location="${default_user_on_aihunter}@`grep '^[^#]*DatabaseLocation' /etc/rita/agent.yaml 2>/dev/null | sed -e 's/^.*DatabaseLocation:*\W*//'`"
@@ -145,7 +145,7 @@ if [ -z "$aih_location" ]; then
 	fi
 fi
 
-#Find a unique name for this bro node
+#Find a unique name for this bro/zeek node
 #Note that the ID cannot contain:   “/, \, ., “, *, <, >, :, |, ?, $,“. It also cannot contain a single space or null character.  Avoiding comma too just in case.
 #It must also be <=53 characters, as mongo has a maximum database name size of 64 chars and we need to leave space for -YYYY-MM-DD
 if [ -s /etc/rita/agent.yaml -a -n "`grep '^[^#]*Name' /etc/rita/agent.yaml 2>/dev/null | sed -e 's/^.*Name:*\W*//'`" ]; then
@@ -157,10 +157,6 @@ else
 	#The tr command strips off spaces or odd characters in hostname
 	my_id=`hostname -s | tr -dc 'a-zA-Z0-9_^+='`"__"`ip route get 8.8.8.8 | awk '{print $NF;exit}' | tr -dc 'a-zA-Z0-9_^+='`
 	my_id=`echo "$my_id" | cut -c -52`
-fi
-
-if [ -z "$remote_top_dir" ]; then
-	remote_top_dir="/opt/bro/remotelogs/$my_id/"
 fi
 
 extra_ssh_params=' '
@@ -192,10 +188,22 @@ if ! can_ssh "$aih_location" "-o" 'PasswordAuthentication=no' $extra_ssh_params 
 	fi
 fi
 
-#What local directory holds the bro logs?
+#What local directory holds the bro/zeek logs?
 #Make sure the directory ends in a "/".
 if [ -z "$local_tld" ]; then
-	if [ -d /storage/bro/logs/ ]; then				#Custom
+	# Check for zeek paths first
+	if [ -d /storage/zeek/logs/ ]; then				#Custom
+		local_tld='/storage/zeek/logs/'
+	elif [ -d /opt/zeek/logs/ ]; then				#Zeek as installed by Rita
+		local_tld='/opt/zeek/logs/'
+	elif [ -d /usr/local/zeek/logs/ ]; then				#Zeek default
+		local_tld='/usr/local/zeek/logs/'
+	elif [ -d /var/lib/docker/volumes/var_log_zeek/_data/ ]; then	#Blue vector
+		local_tld='/var/lib/docker/volumes/var_log_zeek/_data/'
+	elif [ -d /nsm/zeek/logs/ ]; then				#Security onion
+		local_tld='/nsm/zeek/logs/'
+	# Check Bro paths
+	elif [ -d /storage/bro/logs/ ]; then				#Custom
 		local_tld='/storage/bro/logs/'
 	elif [ -d /opt/bro/logs/ ]; then				#Bro as installed by Rita
 		local_tld='/opt/bro/logs/'
@@ -206,8 +214,19 @@ if [ -z "$local_tld" ]; then
 	elif [ -d /nsm/bro/logs/ ]; then				#Security onion
 		local_tld='/nsm/bro/logs/'
 	else
-		fail 'Unable to locate top level directory for bro logs, please rerun script, specifying the top level path to bro logs with --localdir .'
+		fail 'Unable to locate top level directory for bro/zeek logs, please rerun script, specifying the top level path to bro/zeek logs with --localdir .'
 	fi
+fi
+
+ids_name=''
+if [[ $local_tld == *"zeek"* ]]; then
+	ids_name='zeek'
+else
+	ids_name='bro'
+fi
+
+if [ -z "$remote_top_dir" ]; then
+	remote_top_dir="/opt/$ids_name/remotelogs/$my_id/"
 fi
 
 today=`date '+%Y-%m-%d'`
@@ -224,7 +243,7 @@ cd "$local_tld" || fail "Unable to change to $local_tld"
 send_candidates=`find . -type f -mtime -3 -iname '*.gz' | egrep '(conn|dns|http|ssl|x509|known_certs)' | sort -u`
 if  [ ${#send_candidates} -eq 0 ]; then
 	echo
-	printf "WARNING: No logs found, if your log directory is not $local_tld please use the flag: --localdir [bro_log_directory]"
+	printf "WARNING: No logs found, if your log directory is not $local_tld please use the flag: --localdir [bro_zeek_log_directory]"
 	echo
 
 fi
